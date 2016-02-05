@@ -15,12 +15,16 @@ module.exports = postcss.plugin('filterRules', function(options) {
   }
 
   return function filterRules(style) {
-    style.eachRule(function(rule) {
+    style.walkRules(function(rule) {
+      var containsProperty = false;
       rule.each(function(decl, index) {
-        if (exclude !== (properties.indexOf(decl.prop) === -1)) {
-          rule.remove();
+        if (properties.indexOf(decl.prop) !== -1) {
+          containsProperty = true;
         }
       });
+      if(exclude === containsProperty) {
+        rule.remove();
+      }
     });
   }
 });

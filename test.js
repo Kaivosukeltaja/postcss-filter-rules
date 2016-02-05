@@ -11,26 +11,50 @@ function run(t, input, output, opts = { }) {
         });
 }
 
-test('filter out z-indexed elements', t => {
-    let root = postcss.parse('.div { color: black; position: fixed; } .span { color: white; position: relative; z-index: 1}');
-    let expected = postcss.parse('.div{color: black;position: fixed;}');
-    let opts = { props: ['z-index'], exclude: true };
-    return postcss([
-      plugin(opts)
-    ]).process(root, opts).then(result => {
-        t.is(result.css, expected);
-        t.is(result.warnings().length, 0);
-    });
+test('filter out positioned elements', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        postcss.parse('.span { color: white; z-index: 1; }').toResult().css,
+        { props: ['position'], exclude: true }
+    );
 });
 
-test('keep only z-indexed elements', t => {
-    let root = postcss.parse('.div { color: black; position: fixed; } .span { color: white; position: relative; z-index: 1}');
-    let expected = postcss.parse('.span{color: white; position: relative; z-index: 1}');
-    let opts = { props: ['z-index'] };
-    return postcss([
-      plugin(opts)
-    ]).process(root, opts).then(result => {
-        t.is(result.css, expected);
-        t.is(result.warnings().length, 0);
-    });
+test('keep only positioned elements', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        postcss.parse('.div { color: black; position: fixed; }').toResult().css,
+        { props: ['position'] }
+    );
+});
+
+test('keep all elements if no excluded properties match', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }').toResult().css,
+        { props: ['border-width'], exclude: true }
+    );
+});
+
+test('keep all elements if no all have matching properties', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }').toResult().css,
+        { props: ['z-index', 'position']}
+    );
+});
+
+test('return empty if all rules are excluded', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        '',
+        { props: ['color'], exclude: true }
+    );
+});
+
+test('return empty if no rules match', t => {
+    return run(t,
+        postcss.parse('.div { color: black; position: fixed; } .span { color: white; z-index: 1; }'),
+        '',
+        { props: ['border-width'] }
+    );
 });
